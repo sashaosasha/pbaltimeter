@@ -18,6 +18,7 @@ Layer hour_layer;
 Layer minute_layer;
 Layer seconds_layer;
 BmpContainer background_image;
+TextLayer date_layer;
 
 double ah, am, as;
 
@@ -107,7 +108,7 @@ void seconds_layer_update_callback(Layer *me, GContext* ctx)
 
 void update_angles(PblTm* time)
 {
-  int ah_new = ((time->tm_hour * 60 + time->tm_min) * TRIG_MAX_ANGLE / (24 * 60));
+  int ah_new = ((time->tm_hour % 12) * 60 + time->tm_min) * TRIG_MAX_ANGLE / (12 * 60);
   if (ah_new != ah)
   {
       ah = ah_new;
@@ -136,6 +137,14 @@ void handle_init(AppContextRef ctx) {
   bitmap_layer_set_bitmap(&background_layer, &background_image.bmp);
   layer_add_child(&window.layer, &background_layer.layer);
 
+  // Layer for date
+  GPoint center = grect_center_point(&window.layer.frame);
+  text_layer_init(&date_layer, GRect(center.x + 25, center.y - 12, 32, 32));
+  text_layer_set_background_color(&date_layer, GColorClear);
+  text_layer_set_text_color(&date_layer, GColorWhite);
+  text_layer_set_font(&date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  layer_add_child(&window.layer, &date_layer.layer);
+
   // Layers for hands
   layer_init(&hour_layer, window.layer.frame);
   hour_layer.update_proc = &hour_layer_update_callback;
@@ -149,6 +158,7 @@ void handle_init(AppContextRef ctx) {
   seconds_layer.update_proc = &seconds_layer_update_callback;
   layer_add_child(&window.layer, &seconds_layer);
 
+  // Initialize paths to draw hands
   gpath_init(&minute_hand_path, &MINUTE_HAND_PATH_POINTS);
   gpath_move_to(&minute_hand_path, grect_center_point(&minute_layer.frame));
   gpath_init(&hour_hand_path, &HOUR_HAND_PATH_POINTS);
@@ -156,8 +166,7 @@ void handle_init(AppContextRef ctx) {
   gpath_init(&second_hand_path, &SECOND_HAND_PATH_POINTS);
   gpath_move_to(&second_hand_path, grect_center_point(&hour_layer.frame));
 
-
-
+  // Draw watchface before next second ticks
   PblTm time;
   get_time(&time);
   update_angles(&time);
@@ -165,7 +174,15 @@ void handle_init(AppContextRef ctx) {
 
 void handle_second_tick(AppContextRef ctx, PebbleTickEvent *t) {
   (void)ctx;
+  static int date = 0;
+  static char* text = "42";
   update_angles(t->tick_time);
+  if (date != t->tick_time->tm_mday)
+  {
+      date = t->tick_time->tm_mday;
+      string_format_time(text, sizeof(text), "%d", t->tick_time);
+      text_layer_set_text(&date_layer, text);
+  }
 }
 
 void handle_deinit(AppContextRef ctx) {
