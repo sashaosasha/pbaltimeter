@@ -47,10 +47,10 @@ const GPathInfo MINUTE_HAND_PATH_POINTS = {
 const GPathInfo SECOND_HAND_PATH_POINTS = {
   4,
   (GPoint []) {
-    {1, 12},
-    {1, -70},
-    {-1,  -70},
-    {-1, 12}
+    {2, 12},
+    {2, -70},
+    {-2,  -70},
+    {-2, 12}
   }
 };
 
@@ -86,17 +86,22 @@ void seconds_layer_update_callback(Layer *me, GContext* ctx)
 {
   (void)me;
   GPoint ptc = grect_center_point(&me->frame);
-  /*
+  graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_context_set_stroke_color(ctx, GColorWhite);
   int r = 70;
   int r2 = -12;
-  int x2 = ptc.x + cos_lookup(as) * r/TRIG_MAX_RATIO;
-  int y2 = ptc.y + sin_lookup(as) * r/TRIG_MAX_RATIO;
-  int x1 = ptc.x + cos_lookup(as) * r2/TRIG_MAX_RATIO;
-  int y1 = ptc.y + sin_lookup(as) * r2/TRIG_MAX_RATIO;
+  int angle = as - TRIG_MAX_RATIO / 4;
+  if (angle < 0)
+    angle += TRIG_MAX_RATIO;
+  int x2 = ptc.x + cos_lookup(angle) * r/TRIG_MAX_RATIO;
+  int y2 = ptc.y + sin_lookup(angle) * r/TRIG_MAX_RATIO;
+  int x1 = ptc.x + cos_lookup(angle) * r2/TRIG_MAX_RATIO;
+  int y1 = ptc.y + sin_lookup(angle) * r2/TRIG_MAX_RATIO;
+
+  gpath_rotate_to(&second_hand_path, as);
+  gpath_draw_filled(ctx, &second_hand_path);
+
   graphics_draw_line(ctx, GPoint(x1, y1), GPoint(x2, y2));
-  */
-  draw_hand(ctx, &second_hand_path, as);
   graphics_draw_pixel(ctx, ptc);
 }
 
@@ -149,7 +154,7 @@ void handle_init(AppContextRef ctx) {
   gpath_init(&hour_hand_path, &HOUR_HAND_PATH_POINTS);
   gpath_move_to(&hour_hand_path, grect_center_point(&hour_layer.frame));
   gpath_init(&second_hand_path, &SECOND_HAND_PATH_POINTS);
-  gpath_move_to(&hour_hand_path, grect_center_point(&hour_layer.frame));
+  gpath_move_to(&second_hand_path, grect_center_point(&hour_layer.frame));
 
 
 
